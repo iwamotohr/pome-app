@@ -1,71 +1,101 @@
+"use strict";
+// socket
 import io from "socket.io-client";
-
-// フラグ
-var clearFlag = false;
-var gameOverFlag = false;
-var levelFlag = 0;
+const socket = io();
 // canvas生成
-const canvas = document.createElement("canvas");
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 canvas.width = 400;
 canvas.height = 400;
-canvas.setAttribute(
-  "style",
-  "display: block; margin: auto; border: solid 3px #666;"
-);
-document.body.appendChild(canvas);
+
 // 画像取得
-const imgSrc = [
-  "./img/pome_jump.png",
-  "./img/pome_eat.png",
-  "./img/spring.png",
-];
+const imgSrc = ["./img/pome_eat.png", "./img/spring.png"];
 const img = [];
 for (var i in imgSrc) {
   img[i] = new Image();
   img[i].src = imgSrc[i];
 }
 // 音声取得
+/*
 const audioSrc = ["./sound/se_bark.mp3", "./sound/se_eat.mp3"];
 const audio = [];
 for (var i in audioSrc) {
   audio[i] = new Audio();
   audio[i].src = audioSrc[i];
 }
-// 構成要素
-const ball = {
-  x: null,
-  y: null,
-  width: 64,
-  height: 30,
-  speed: 2,
-  dx: null,
-  dy: null,
-  // 描画
-  update: function () {
-    ctx.drawImage(
-      img[0],
-      0,
-      0,
-      32,
-      15,
-      this.x,
-      this.y,
-      this.width,
-      this.height
-    );
+*/
+// 画面変更のためのメッセージ
+const startScreen = document.getElementById("game-start");
+const startButton = document.getElementById("start-button");
+const gameOverScreen = document.getElementById("game-over");
+const retryButton = document.getElementById("retry-button");
+const clearScreen = document.getElementById("game-clear");
+// const nextButton = document.getElementById("next-button");
 
-    if (this.x < 0 || this.x + this.width > canvas.width) this.dx *= -1;
-    if (this.y < 0) this.dy *= -1;
-    if (this.y + this.height > canvas.height) {
-      this.dx = 0;
-      this.dy = 0;
-      gameOverFlag = true;
-    }
-    this.x += this.dx;
-    this.y += this.dy;
-  },
+startButton.onclick = function () {
+  socket.emit("game-start");
 };
+socket.on("remove-startScreen", () => {
+  startScreen.remove();
+});
+socket.on("game-over", () => {
+  gameOverScreen.style.display = "flex";
+});
+retryButton.onclick = function () {
+  socket.emit("retry");
+};
+socket.on("remove-gameOverScreen", () => {
+  gameOverScreen.style.display = "none";
+});
+socket.on("game-clear", () => {
+  clearScreen.style.display = "flex";
+});
+
+// 移動処理
+let movement = {};
+// イベント通信
+const KeyToCommand = {
+  ArrowLeft: "left",
+  ArrowRight: "right",
+};
+document.addEventListener("keydown", (e) => {
+  const command = KeyToCommand[e.key];
+  movement[command] = true;
+  socket.emit("movement", movement);
+});
+document.addEventListener("keyup", (e) => {
+  const command = KeyToCommand[e.key];
+  movement[command] = false;
+  socket.emit("movement", movement);
+});
+
+// player・ball描画
+socket.on("state", (players, pome, block) => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  Object.values(players).forEach((player) => {
+    ctx.drawImage(
+      img[1],
+      0,
+      0,
+      94,
+      50,
+      player.x,
+      player.y,
+      player.width,
+      player.height
+    );
+  });
+  ctx.drawImage(img[0], 0, 0, 124, 60, pome.x, pome.y, pome.width, pome.height);
+  block.data.forEach((el) => {
+    ctx.fillStyle = el.color;
+    ctx.fillRect(el.x, el.y, el.width - 1, el.height - 1);
+    ctx.fill();
+  });
+});
+
+socket.on("connect", console.log("client connected"));
+/* 
+// 構成要素
 const paddle = {
   x: null,
   y: null,
@@ -88,98 +118,6 @@ const paddle = {
     this.x += this.speed;
     if (this.x < 0) this.x = 0;
     if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
-  },
-};
-const block = {
-  width: null,
-  height: 20,
-  data: [],
-  // 描画
-  update: function () {
-    this.data.forEach((el) => {
-      ctx.fillStyle = el.color;
-      ctx.fillRect(el.x, el.y, el.width - 1, el.height - 1);
-      ctx.fill();
-    });
-  },
-};
-const level_1 = {
-  brick: [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0],
-    [0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0],
-    [0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0],
-    [0, 0, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0],
-    [0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0],
-    [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-    [0, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 0],
-    [0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 0],
-    [0, 0, 3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 0, 0],
-  ],
-  palette: ["#f5f5f5", "#d3d3d3", "#a9a9a9"],
-};
-const level_2 = {
-  brick: [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-  ],
-  palette: ["#FF0000", "#FF4500", "#a9a9a9"],
-};
-const level_3 = {
-  brick: [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0],
-  ],
-  palette: ["#f5f5f5", "#d3d3d3", "#8b4513"],
-};
-const level = [level_1.brick, level_2.brick, level_3.brick];
-const palette = [level_1.palette, level_2.palette, level_3.palette];
-
-// user通信
-const sockets = {
-  sockets: null,
-
-  init() {
-    const socketProtocol = window.location.protocol.includes("https")
-      ? "wss"
-      : "ws";
-    this.socket = io(`${socketProtocol}://${window.location.host}`, {
-      reconnection: false,
-    });
-    this.registerConnection();
-  },
-
-  registerConnection() {
-    const connectedPromise = new Promise((resolve) => {
-      this.socket.on("connect", () => {
-        console.log("client connected to server");
-        resolve();
-      });
-    });
-
-    connectedPromise.then(() => {
-      const syncUpdate = (update) => (renderer.gameUpdate = update);
-      this.socket.on("update", syncUpdate);
-    });
   },
 };
 
@@ -207,50 +145,6 @@ const init = () => {
       }
     }
   }
-};
-const collide = (obj1, obj2) => {
-  return (
-    obj1.x < obj2.x + obj2.width &&
-    obj2.x < obj1.x + obj1.width &&
-    obj1.y < obj2.y + obj2.height &&
-    obj2.y < obj1.y + obj1.height
-  );
-};
-
-const gameOver = () => {
-  ctx.fillStyle = " #333";
-  ctx.font = "24px monospace";
-  ctx.strokeText(
-    "GAME OVER...",
-    canvas.width / 2 - 110 / 2,
-    (canvas.height * 3) / 5
-  );
-  ctx.strokeText(
-    "Press ENTER key to retry",
-    canvas.width / 2 - 300 / 2,
-    (canvas.height * 3) / 5 + 32
-  );
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      window.location.reload();
-    }
-  });
-};
-
-const gameClear = () => {
-  ctx.fillStyle = " #333";
-  ctx.font = "24px monospace";
-  ctx.strokeText(
-    "GAME CLEAR!!",
-    canvas.width / 2 - 110 / 2,
-    (canvas.height * 1) / 2
-  );
-  ctx.strokeText(
-    "Press ENTER key to next stage",
-    canvas.width / 2 - 340 / 2,
-    (canvas.height * 1) / 2 + 32
-  );
-  levelFlag += 1;
 };
 
 const loop = () => {
@@ -282,36 +176,4 @@ const loop = () => {
       audio[1].play();
     }
   });
-  if (!block.data.length)
-    setTimeout(() => {
-      clearFlag = true;
-    }, 200);
-
-  // ブラウザ適正タイミングで繰り返し処理実行
-  window.requestAnimationFrame(loop);
-};
-
-const nextStage = () => {
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      clearFlag = false;
-      init();
-      loop();
-    }
-  });
-};
-
-// 処理実行
-sockets.init();
-init();
-loop();
-nextStage();
-
-// イベント処理
-document.addEventListener("keydown", (e) => {
-  if (e.key === "ArrowLeft") paddle.speed = -6;
-  if (e.key === "ArrowRight") paddle.speed = 6;
-});
-document.addEventListener("keyup", () => {
-  paddle.speed = 0;
-});
+*/

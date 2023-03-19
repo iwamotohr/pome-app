@@ -5,7 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>myApp</title>
 </head>
-<body style="display: flex;justify-content: center; align-items: center; height: 100vh;">
+<body style="display: flex;justify-content: center; align-items: center; height: 100vh">
+    <div id="game-start"
+    style="
+    position: absolute; width: 400px;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(0,0,0,0.2)">
+        <button id="start-button"
+        style="
+        width: 150px;
+        height: 40px;
+        border-radius: 6px;
+        border: none;
+        background-color: #666; font-size: 18px;
+        color: aliceblue; cursor: pointer;">game start</button>
+    </div>
+    <div id="game-over"
+    style="
+    position: absolute; width: 400px;
+    height: 400px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(0,0,0,0.3)">
+        <p style="color: #fff;">game over...</p>
+        <button id="retry-button"
+        style="
+        width: 150px;
+        height: 40px;
+        border-radius: 6px;
+        border: none;
+        background-color: #666;
+        font-size: 18px;
+        color: aliceblue;
+        cursor: pointer;">retry</button>
+    </div>
+    <div id="game-clear"
+    style="
+    position: absolute; width: 400px;
+    height: 400px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(255,255,255,0.6)">
+        <p style="color: #666;">game clear!!</p>
+        <button id="next-button"
+        style="
+        width: 150px;
+        height: 40px;
+        border-radius: 6px;
+        border: solid 2px #666;
+        background-color: #fff;
+        font-size: 18px;
+        color: #666; 
+        cursor: pointer;">next stage</button>
+    </div>
+    <canvas id="canvas" style="
+    display: block;
+    width: 400px;
+    height: 400px;
+    margin: auto;
+    border: solid 3px #666;"></canvas>
     <script src="./main.js"></script>
 </body>
 </html>
